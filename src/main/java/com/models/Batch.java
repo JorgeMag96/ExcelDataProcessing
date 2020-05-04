@@ -13,6 +13,10 @@ public class Batch {
     return rowsOfData.size();
   }
 
+  public List<RowData> getRowsOfData(){
+    return rowsOfData;
+  }
+
   // Represents all the DataRows for a given point in time.
   private List<RowData> rowsOfData = new ArrayList<>();
 

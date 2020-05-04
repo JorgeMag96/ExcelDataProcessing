@@ -4,11 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.utils.Analyzer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -56,11 +52,11 @@ public class Controller implements Initializable{
     //TODO: Maybe a process animation while the Analyzer is working would be cool.
 
     //TODO: This piece of code is only for testing purposes, delete this when the program is ready to save the output file.
-    outputFile = new XSSFWorkbook();
-    Sheet exampleSheet = outputFile.createSheet("1");
-    Row firstRow = exampleSheet.createRow(1);
-    Cell cell = firstRow.createCell(0);
-    cell.setCellValue("value");
+    //    outputFile = new XSSFWorkbook();
+    //    Sheet exampleSheet = outputFile.createSheet("1");
+    //    Row firstRow = exampleSheet.createRow(1);
+    //    Cell cell = firstRow.createCell(0);
+    //    cell.setCellValue("value");
 
     fileLabel.setText("");
     FileChooser fc = new FileChooser();
