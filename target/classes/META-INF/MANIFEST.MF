@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 11
+Class-Path: poi-4.1.2.jar commons-codec-1.13.jar commons-collections4-4.
+ 4.jar commons-math3-3.6.1.jar SparseBitSet-1.2.jar poi-ooxml-4.1.2.jar 
+ poi-ooxml-schemas-4.1.2.jar xmlbeans-3.1.0.jar commons-compress-1.19.ja
+ r curvesapi-1.06.jar
+Main-Class: Main
+Created-By: Maven Integration for Eclipse
+
