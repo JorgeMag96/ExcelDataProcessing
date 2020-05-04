@@ -1,9 +1,14 @@
 package com.controller;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.utils.Analyzer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -13,16 +18,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
-import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 
 public class Controller implements Initializable{
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    fc = new FileChooser();
-    fc.setInitialDirectory(new File("data"+File.separator+"input"));
-    fc.setSelectedExtensionFilter(new ExtensionFilter("Microsft Excel File","*.xlsx"));
     startBtn.setOnAction(e -> startImpl());
     chooseFileBtn.setOnAction(e -> chooseFileImpl());
   }
@@ -50,12 +51,52 @@ public class Controller implements Initializable{
         return;
       }
     }
+
     Workbook outputFile =  Analyzer.startAnalyzer(fileLabel.getText(), inputLength);
-    //TODO: Selec where to save the outputfile.
+    //TODO: Maybe a process animation while the Analyzer is working would be cool.
+
+    //TODO: This piece of code is only for testing purposes, delete this when the program is ready to save the output file.
+    outputFile = new XSSFWorkbook();
+    Sheet exampleSheet = outputFile.createSheet("1");
+    Row firstRow = exampleSheet.createRow(1);
+    Cell cell = firstRow.createCell(0);
+    cell.setCellValue("value");
+
     fileLabel.setText("");
+    FileChooser fc = new FileChooser();
+    fc.setTitle("Save the output file");
+    FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
+    fc.getExtensionFilters().add(extFilter);
+    fc.setInitialDirectory(new File("data"+File.separator+"output"));
+    fc.setInitialFileName("output.xlsx");
+
+    try (
+        //Write the workbook in file system
+        FileOutputStream out = new FileOutputStream(new File(fc.showSaveDialog(stage).getAbsolutePath()))) {
+      outputFile.write(out);
+      outputFile.close();
+    }
+    catch(Exception e) {
+      // Workbook already exists
+      Alert alert = new Alert(AlertType.ERROR);
+      alert.setTitle("Error while attempting to save file.");
+      alert.setContentText(e.getMessage());
+      alert.showAndWait();
+      return;
+    }
+
+    Alert alert = new Alert(AlertType.INFORMATION);
+    alert.setTitle("Success !");
+    alert.setContentText("Output file successfully saved.");
+    alert.showAndWait();
+
   }
 
   public void chooseFileImpl() {
+    FileChooser fc = new FileChooser();
+    fc.setInitialDirectory(new File("data"+File.separator+"input"));
+    FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
+    fc.getExtensionFilters().add(extFilter);
     File selectedInstanceFile = fc.showOpenDialog(stage);
     fileLabel.setText((selectedInstanceFile != null)? selectedInstanceFile.toString():"");
   }
@@ -65,8 +106,6 @@ public class Controller implements Initializable{
   }
 
   private Stage stage;
-
-  private FileChooser fc;
 
   @FXML
   private Label fileLabel;
