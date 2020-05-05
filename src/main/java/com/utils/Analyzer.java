@@ -1,6 +1,7 @@
 package com.utils;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -23,19 +24,24 @@ import com.models.RowData;
  */
 public class Analyzer {
 
+  public static final String tempFilePath = "data"+File.separator+"temp"+File.separator+"temp_output.xlsx";
+
   public static Workbook startAnalyzer(String pathToFile, int inputLength) {
 
     System.out.println("Analyzer started..");
 
     try {
-      File file = new File(pathToFile);
-
-      // Load the excel workbook input.
-      XSSFWorkbook workbook = new XSSFWorkbook(file);
-      XSSFSheet inputSheet = workbook.getSheetAt(0);
+      if(new File(tempFilePath).exists()) {
+        new File(tempFilePath).delete();
+      }
+      File inputWbFile = new File(pathToFile);
+      File outputWbFile = new File(tempFilePath);
+      Files.copy(inputWbFile.toPath(), outputWbFile.toPath());
 
       // Create the output sheet.
-      XSSFSheet outputSheet = workbook.createSheet("Output");
+      XSSFWorkbook outputWorkbook = new XSSFWorkbook(outputWbFile);
+      XSSFSheet inputSheet = outputWorkbook.getSheetAt(0);
+      XSSFSheet outputSheet = outputWorkbook.createSheet("Output");
       int outputRowsCount = 0;
 
       // Build the header
@@ -91,7 +97,8 @@ public class Analyzer {
         batch.addRowData(rowData);
 
       }
-      return workbook;
+      outputWorkbook.removeSheetAt(0);
+      return outputWorkbook;
     }
     catch (Exception e) {
       e.printStackTrace();

@@ -51,13 +51,6 @@ public class Controller implements Initializable{
     Workbook outputFile =  Analyzer.startAnalyzer(fileLabel.getText(), inputLength);
     //TODO: Maybe a process animation while the Analyzer is working would be cool.
 
-    //TODO: This piece of code is only for testing purposes, delete this when the program is ready to save the output file.
-    //    outputFile = new XSSFWorkbook();
-    //    Sheet exampleSheet = outputFile.createSheet("1");
-    //    Row firstRow = exampleSheet.createRow(1);
-    //    Cell cell = firstRow.createCell(0);
-    //    cell.setCellValue("value");
-
     fileLabel.setText("");
     FileChooser fc = new FileChooser();
     fc.setTitle("Save the output file");
@@ -85,6 +78,7 @@ public class Controller implements Initializable{
     alert.setTitle("Success !");
     alert.setContentText("Output file successfully saved.");
     alert.showAndWait();
+    System.out.println("Successfully deleted output_temp file = "+new File(Analyzer.tempFilePath).delete());
 
   }
 
