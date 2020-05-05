@@ -61,6 +61,8 @@ public class Analyzer {
       // Need to skip the first row since it is the header.
       iterator.next();
 
+      List<Integer> validDataRows = new ArrayList<>();
+
       while(iterator.hasNext()) {
 
         // Get the rowData.
@@ -74,17 +76,7 @@ public class Analyzer {
         if(!previousDate.equals(date) || previousTime != time) {
 
           // Process the batch and get the valid data rows.
-          List<Integer> validDataRows = Analyzer.processBatch(batch, inputLength);
-
-          if(!validDataRows.isEmpty()) {
-            for(Integer rowIndex : validDataRows) {
-              XSSFRow inputRow = inputSheet.getRow(rowIndex);
-              XSSFRow outputRow = outputSheet.createRow(outputRowsCount++);
-              outputRow.copyRowFrom(inputRow, new CellCopyPolicy());
-              DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-              outputRow.getCell(1).setCellValue(dateFormat.format(inputRow.getCell(1).getDateCellValue()));
-            }
-          }
+          validDataRows.addAll(Analyzer.processBatch(batch, inputLength));
 
           // Restore the batch object.
           batch = new Batch();
@@ -93,10 +85,22 @@ public class Analyzer {
           previousDate = date;
           previousTime = time;
         }
-
         batch.addRowData(rowData);
-
       }
+
+      // Process the last batch of data. Since the last batch of data doesn't enters the condition of the previous date comparison.
+      validDataRows.addAll(Analyzer.processBatch(batch, inputLength));
+
+      if(!validDataRows.isEmpty()) {
+        for(Integer rowIndex : validDataRows) {
+          XSSFRow inputRow = inputSheet.getRow(rowIndex);
+          XSSFRow outputRow = outputSheet.createRow(outputRowsCount++);
+          outputRow.copyRowFrom(inputRow, new CellCopyPolicy());
+          DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+          outputRow.getCell(1).setCellValue(dateFormat.format(inputRow.getCell(1).getDateCellValue()));
+        }
+      }
+
       outputWorkbook.removeSheetAt(0);
       return outputWorkbook;
     }
@@ -124,6 +128,8 @@ public class Analyzer {
       return listOfValidRows;
     }
 
+    //TODO: Need to remove the RowData with average greater than the min already collected.
+
     //TODO: Remove this line when program is finished.
     firstFilterList.forEach(System.out::println);
 
@@ -137,12 +143,14 @@ public class Analyzer {
     }
 
     int startingPosition = firstFilterList.indexOf(startingRow);
+    int startingFowardPosition = startingPosition;
+
     // Add this row number, since is a valid data.
     listOfValidRows.add(startingRow.getRowNumber());
 
     // Need to add all the rows with the input length.
     int i = 0;
-    int nextIndex = ++startingPosition;
+    int nextIndex = ++startingFowardPosition;
     while(true) {
 
       if(nextIndex >= firstFilterList.size()) {
@@ -162,11 +170,18 @@ public class Analyzer {
     }
 
     //TODO: Remove this line when program is finished.
-    System.out.println("Position to start next length rows = "+startingPosition);
+    System.out.println("Row position to start foward processing = "+startingFowardPosition);
 
-    processFoward(firstFilterList, startingPosition, listOfValidRows);
+    processFoward(firstFilterList, startingFowardPosition, listOfValidRows);
 
-    processBackward(firstFilterList, startingPosition, listOfValidRows);
+    //TODO: Remove this line when program is finished.
+    if(startingPosition > 0) {
+      int startingBackwardPosition = startingPosition - 1;
+      System.out.println("Row position to start backward processing = "+startingBackwardPosition);
+
+      processBackward(firstFilterList, startingBackwardPosition, listOfValidRows);
+    }
+
 
     return listOfValidRows;
   }
@@ -174,16 +189,45 @@ public class Analyzer {
   /**
    * Process the rows of data that are greater than the initial length input.
    *
-   * @param nextRows - The rows of the batch that are after the valid initial length input row.
-   * @param previousRowIndex
-   * @param listOfValidRows
+   * @param rowList - The rows of the batch that are after the valid initial length input row.
+   * @param startingPosition - The position of the first row to start analyzing.
+   * @param listOfValidRows - Reference to the list which contains the numbers of the valid rows.
    */
-  private static void processFoward(List<RowData> nextRows, int startingPosition, List<Integer> listOfValidRows) {
-    // This function might be a recursive one, we need to keep analyzing the next rows, while the condition is meth
-    //if()
+  private static void processFoward(List<RowData> rowList, int startingPosition, List<Integer> listOfValidRows) {
+
+    if(startingPosition >= rowList.size()) return;
+    int previous = startingPosition - 1;
+
+    RowData current = rowList.get(startingPosition++);
+    if(current.getStart() < rowList.get(previous).getMax()) {
+      listOfValidRows.add(current.getRowNumber());
+    }
+    else {
+      return;
+    }
+
+    processFoward(rowList,startingPosition,listOfValidRows);
+
   }
 
-  private static void processBackward(List<RowData> previousRows, int startingPosition, List<Integer> listOfValidRows) {
+  /**
+   * Process the rows of data that are less than the initial length input.
+   *
+   * @param rowList - The rows of the batch that are after the valid initial length input row.
+   * @param startingPosition - The position of the first row to start analyzing.
+   * @param listOfValidRows - Reference to the list which contains the numbers of the valid rows.
+   */
+  private static void processBackward(List<RowData> rowList, int startingPosition, List<Integer> listOfValidRows) {
+    if(startingPosition < 0) return;
+    int previous = startingPosition + 1;
+
+    RowData current = rowList.get(startingPosition--);
+    if(current.getMax() > rowList.get(previous).getStart()) {
+      listOfValidRows.add(current.getRowNumber());
+    }
+    else {
+      return;
+    }
 
   }
 
