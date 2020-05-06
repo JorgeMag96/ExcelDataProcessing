@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.Row;
@@ -28,7 +29,9 @@ public class Analyzer {
 
   public static Workbook startAnalyzer(String pathToFile, int inputLength) {
 
+    //TODO: Remove this when program is finished
     System.out.println("Analyzer started..");
+    long startTime = System.currentTimeMillis();
 
     try {
       if(new File(tempFilePath).exists()) {
@@ -102,6 +105,10 @@ public class Analyzer {
       }
 
       outputWorkbook.removeSheetAt(0);
+
+      //TODO: Remove this when program is finished
+      System.out.println("Elapsed time = "+(System.currentTimeMillis()-startTime)/1000+" seconds.");
+
       return outputWorkbook;
     }
     catch (Exception e) {
@@ -118,7 +125,7 @@ public class Analyzer {
    * @return A list of rows that represent valid data.
    */
   private static List<Integer> processBatch(Batch batch, int inputLength) {
-    //TODO: Here we need to write the fun stuff.
+
     List<Integer> listOfValidRows = new ArrayList<>();
     System.out.println("Processing batch with size of = "+batch.size());
 
@@ -128,7 +135,18 @@ public class Analyzer {
       return listOfValidRows;
     }
 
-    //TODO: Need to remove the RowData with average greater than the min already collected.
+    OptionalDouble minAvg = firstFilterList.stream().mapToDouble(r -> r.getAverage()).min();
+    float minAvgVal;
+    if(minAvg.isPresent()) {
+      minAvgVal = (float) minAvg.getAsDouble();
+    }else {
+      return listOfValidRows;
+    }
+
+    // Filter the list so that only rows with the same average are considered.
+    // For example:
+    // We know that the row of the input length has an average of 4.9, then we are only going to consider rows with that average.
+    firstFilterList = firstFilterList.stream().filter(r -> r.getAverage() == minAvgVal).collect(Collectors.toList());
 
     //TODO: Remove this line when program is finished.
     firstFilterList.forEach(System.out::println);
@@ -174,14 +192,12 @@ public class Analyzer {
 
     processFoward(firstFilterList, startingFowardPosition, listOfValidRows);
 
+    int startingBackwardPosition = startingPosition - 1;
+
     //TODO: Remove this line when program is finished.
-    if(startingPosition > 0) {
-      int startingBackwardPosition = startingPosition - 1;
-      System.out.println("Row position to start backward processing = "+startingBackwardPosition);
+    System.out.println("Row position to start backward processing = "+startingBackwardPosition);
 
-      processBackward(firstFilterList, startingBackwardPosition, listOfValidRows);
-    }
-
+    processBackward(firstFilterList, startingBackwardPosition, listOfValidRows);
 
     return listOfValidRows;
   }
@@ -252,4 +268,5 @@ public class Analyzer {
     header.createCell(17).setCellValue("Max");
     header.createCell(18).setCellValue("Cycle Time");
   }
+
 }
