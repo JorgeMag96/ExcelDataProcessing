@@ -5,7 +5,7 @@ import org.apache.poi.ss.usermodel.Row;
 /**
  * This class represents a single row of data.
  */
-public class RowData {
+public class RowData implements Comparable<RowData> {
 
   /**
    *
@@ -99,4 +99,16 @@ public class RowData {
 
   // Column 0
   private int max;
+
+  @Override
+  public int compareTo(RowData o) {
+    if(rowNumber > o.getRowNumber()) {
+      return 1;
+    }
+    else if(rowNumber < o.getRowNumber()) {
+      return -1;
+    }
+
+    return 0;
+  }
 }

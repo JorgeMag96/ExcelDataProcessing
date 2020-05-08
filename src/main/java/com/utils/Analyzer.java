@@ -5,11 +5,10 @@ import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -120,87 +119,83 @@ public class Analyzer {
 
   /**
    * This function will process the batch and return a List of rows to print to the output file.
-   * @param batch - The Batch object to process.
+   * @param mainBatch - The Batch of rows data for a specific date.
    * @param input - The input length for this processing.
    * @return A list of rows that represent valid data.
    */
-  private static List<Integer> processBatch(Batch batch, int inputLength) {
+  private static List<Integer> processBatch(Batch mainBatch, int inputLength) {
 
-    List<Integer> listOfValidRows = new ArrayList<>();
-    System.out.println("Processing batch with size of = "+batch.size());
+    List<Batch> subBatches = getSubBatchesFromAverageValues(mainBatch);
+    Iterator<Batch> batchesIterator = subBatches.iterator();
 
-    // Here we apply the first filter of making sure we just take into account the ones with average greater or equal than max average.
-    List<RowData> firstFilterList = batch.getRowsOfData().stream().filter(r -> r.getAverage() >= r.getMaxAverage()).collect(Collectors.toList());
-    if(firstFilterList.isEmpty()) {
+    while(batchesIterator.hasNext()) {
+      List<Integer> listOfValidRows = new ArrayList<>();
+      Batch currentBatch = batchesIterator.next();
+      System.out.println("Processing sub-batch with size of = "+currentBatch.size());
+
+      // Check if there's the input length in this sub batch.
+      List<RowData> rowsOfData = currentBatch.getRowsOfData();
+      Optional<RowData> optionalStartingRow = rowsOfData.stream().filter(r -> r.getLength() == inputLength).findFirst();
+      if(!optionalStartingRow.isPresent()) {
+        continue;
+      }
+
+      RowData startingRow = optionalStartingRow.get();
+
+
+      int startingPosition = rowsOfData.indexOf(startingRow);
+
+      int startingFowardPosition = (int) rowsOfData.stream().filter(r -> r.getLength() == inputLength).count() + startingPosition;
+
+      boolean isValidInput = true;
+      for(int i = startingPosition; i < startingFowardPosition; i++) {
+        RowData rowData = rowsOfData.get(i);
+        if(rowData.getAverage() < rowData.getMaxAverage()) {
+          isValidInput = false;
+          break;
+        }
+        listOfValidRows.add(rowsOfData.get(i).getRowNumber());
+      }
+
+      if(!isValidInput) continue;
+
+      //TODO: Remove this when program is finished.
+      rowsOfData.forEach(System.out::println);
+
+      //TODO: Remove this line when program is finished.
+      System.out.println("Row position to start foward processing = "+startingFowardPosition);
+
+      List<Integer> nextValidRowData = new ArrayList<>();
+      processFoward(rowsOfData, startingFowardPosition, nextValidRowData);
+      if(maxAvgChanged) {
+        System.out.println("Average is less than the max average !");
+        maxAvgChanged = false;
+        continue;
+      }
+
+      int startingBackwardPosition = startingPosition - 1;
+      //TODO: Remove this line when program is finished.
+      System.out.println("Row position to start backward processing = "+startingBackwardPosition);
+
+      List<Integer> previousValidRowData = new ArrayList<>();
+      processBackward(rowsOfData, startingBackwardPosition, previousValidRowData);
+      if(maxAvgChanged) {
+        System.out.println("Average is less than the max average !");
+        maxAvgChanged = false;
+        continue;
+      }
+
+      // If we reached this it means we got a list of valid rows, or an empty list meaning no valuable data was found in this batch.
+      listOfValidRows.addAll(nextValidRowData);
+      listOfValidRows.addAll(previousValidRowData);
+
+      Collections.sort(listOfValidRows);
       return listOfValidRows;
     }
 
-    OptionalDouble minAvg = firstFilterList.stream().mapToDouble(r -> r.getAverage()).min();
-    float minAvgVal;
-    if(minAvg.isPresent()) {
-      minAvgVal = (float) minAvg.getAsDouble();
-    }else {
-      return listOfValidRows;
-    }
-
-    // Filter the list so that only rows with the same average are considered.
-    // For example:
-    // We know that the row of the input length has an average of 4.9, then we are only going to consider rows with that average.
-    firstFilterList = firstFilterList.stream().filter(r -> r.getAverage() == minAvgVal).collect(Collectors.toList());
-
-    //TODO: Remove this line when program is finished.
-    firstFilterList.forEach(System.out::println);
-
-    // Position on the first row with length == inputLength, if we didn't find any, return null.
-    RowData startingRow;
-    Optional<RowData> optionalStartingRow = firstFilterList.stream().filter(r -> r.getLength() == inputLength).findFirst();
-    if(optionalStartingRow.isPresent()) {
-      startingRow = optionalStartingRow.get();
-    }else {
-      return listOfValidRows;
-    }
-
-    int startingPosition = firstFilterList.indexOf(startingRow);
-    int startingFowardPosition = startingPosition;
-
-    // Add this row number, since is a valid data.
-    listOfValidRows.add(startingRow.getRowNumber());
-
-    // Need to add all the rows with the input length.
-    int i = 0;
-    int nextIndex = ++startingFowardPosition;
-    while(true) {
-
-      if(nextIndex >= firstFilterList.size()) {
-        // Reaching this means we got to the end of the firstFilterList, so just return.
-        return listOfValidRows;
-      }
-
-      RowData nextRow = firstFilterList.get(nextIndex);
-      if(nextRow.getLength() == startingRow.getLength()) {
-        listOfValidRows.add(nextRow.getRowNumber());
-        i++;
-        nextIndex++;
-      }
-      else {
-        break;
-      }
-    }
-
-    //TODO: Remove this line when program is finished.
-    System.out.println("Row position to start foward processing = "+startingFowardPosition);
-
-    processFoward(firstFilterList, startingFowardPosition, listOfValidRows);
-
-    int startingBackwardPosition = startingPosition - 1;
-
-    //TODO: Remove this line when program is finished.
-    System.out.println("Row position to start backward processing = "+startingBackwardPosition);
-
-    processBackward(firstFilterList, startingBackwardPosition, listOfValidRows);
-
-    return listOfValidRows;
+    return null;
   }
+
 
   /**
    * Process the rows of data that are greater than the initial length input.
@@ -209,20 +204,28 @@ public class Analyzer {
    * @param startingPosition - The position of the first row to start analyzing.
    * @param listOfValidRows - Reference to the list which contains the numbers of the valid rows.
    */
-  private static void processFoward(List<RowData> rowList, int startingPosition, List<Integer> listOfValidRows) {
+  private static void processFoward(List<RowData> rowList, int startingPosition, List<Integer> nextValidRowData) {
 
     if(startingPosition >= rowList.size()) return;
-    int previous = startingPosition - 1;
+    int previousIndex = startingPosition - 1;
 
     RowData current = rowList.get(startingPosition++);
-    if(current.getStart() < rowList.get(previous).getMax()) {
-      listOfValidRows.add(current.getRowNumber());
+    RowData previous = rowList.get(previousIndex);
+    if(current.getStart() < previous.getMax()) {
+      // We need to validate that the condition that the average should be greater or equal than max average.
+      // If this condition isn't met, then all the rows selected for this are wrong data.
+      if(current.getAverage() < current.getMaxAverage()) {
+        // Turn boolean flag on to point out that the data is all wrong, because of a change in the max average.
+        maxAvgChanged = true;
+        return;
+      }
+      nextValidRowData.add(current.getRowNumber());
     }
     else {
       return;
     }
 
-    processFoward(rowList,startingPosition,listOfValidRows);
+    processFoward(rowList,startingPosition,nextValidRowData);
 
   }
 
@@ -233,18 +236,59 @@ public class Analyzer {
    * @param startingPosition - The position of the first row to start analyzing.
    * @param listOfValidRows - Reference to the list which contains the numbers of the valid rows.
    */
-  private static void processBackward(List<RowData> rowList, int startingPosition, List<Integer> listOfValidRows) {
+  private static void processBackward(List<RowData> rowList, int startingPosition, List<Integer> previousValidRowData) {
     if(startingPosition < 0) return;
-    int previous = startingPosition + 1;
+    int previousIndex = startingPosition + 1;
 
     RowData current = rowList.get(startingPosition--);
-    if(current.getMax() > rowList.get(previous).getStart()) {
-      listOfValidRows.add(current.getRowNumber());
+    RowData previous = rowList.get(previousIndex);
+    if(current.getMax() > previous.getStart()) {
+      if(current.getAverage() < current.getMaxAverage()) {
+        // Turn boolean flag on to point out that the data is all wrong, because of a change in the max average.
+        maxAvgChanged = true;
+        return;
+      }
+      previousValidRowData.add(current.getRowNumber());
     }
     else {
       return;
     }
 
+    processBackward(rowList,startingPosition,previousValidRowData);
+
+  }
+
+  /**
+   * This method will separate main batch that is for a specific date into sub batches which correspond to a single average value.
+   *
+   * @param mainBatch - The batch that corresponds to a specific date.
+   * @return
+   */
+  private static List<Batch> getSubBatchesFromAverageValues(Batch mainBatch){
+    List<Batch> subBatches = new ArrayList<>();
+
+    Batch subBatch = new Batch();
+    // Initial average.
+    float avg = mainBatch.getRowsOfData().get(0).getAverage();
+    for(RowData r: mainBatch.getRowsOfData()) {
+      if(r.getAverage() == avg) {
+        subBatch.addRowData(r);
+      }
+      else {
+        // Add the already built batch, before reset.
+        subBatches.add(subBatch);
+
+        //Reset and add new subBatch
+        avg = r.getAverage();
+        subBatch = new Batch();
+        subBatch.addRowData(r);
+      }
+    }
+
+    // Add the last batch.
+    subBatches.add(subBatch);
+
+    return subBatches;
   }
 
   private static void buildHeader(XSSFRow header) {
@@ -269,4 +313,5 @@ public class Analyzer {
     header.createCell(18).setCellValue("Cycle Time");
   }
 
+  private static boolean maxAvgChanged = false;
 }
