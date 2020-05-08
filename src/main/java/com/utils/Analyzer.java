@@ -78,7 +78,10 @@ public class Analyzer {
         if(!previousDate.equals(date) || previousTime != time) {
 
           // Process the batch and get the valid data rows.
-          validDataRows.addAll(Analyzer.processBatch(batch, inputLength));
+          List<Integer> dataRows = Analyzer.processBatch(batch, inputLength);
+          if(dataRows != null) {
+            validDataRows.addAll(dataRows);
+          }
 
           // Restore the batch object.
           batch = new Batch();
@@ -147,6 +150,7 @@ public class Analyzer {
 
       int startingFowardPosition = (int) rowsOfData.stream().filter(r -> r.getLength() == inputLength).count() + startingPosition;
 
+      // Make sure our input length rows meet the requirement of average must be greater or equal than max average.
       boolean isValidInput = true;
       for(int i = startingPosition; i < startingFowardPosition; i++) {
         RowData rowData = rowsOfData.get(i);
@@ -158,6 +162,8 @@ public class Analyzer {
       }
 
       if(!isValidInput) continue;
+
+      boolean processBackwardRows = startingRow.getStart() != startingRow.getMax();
 
       //TODO: Remove this when program is finished.
       rowsOfData.forEach(System.out::println);
@@ -172,23 +178,24 @@ public class Analyzer {
         maxAvgChanged = false;
         continue;
       }
+      listOfValidRows.addAll(nextValidRowData);
 
       int startingBackwardPosition = startingPosition - 1;
       //TODO: Remove this line when program is finished.
       System.out.println("Row position to start backward processing = "+startingBackwardPosition);
 
-      List<Integer> previousValidRowData = new ArrayList<>();
-      processBackward(rowsOfData, startingBackwardPosition, previousValidRowData);
-      if(maxAvgChanged) {
-        System.out.println("Average is less than the max average !");
-        maxAvgChanged = false;
-        continue;
+      if(processBackwardRows) {
+        List<Integer> previousValidRowData = new ArrayList<>();
+        processBackward(rowsOfData, startingBackwardPosition, previousValidRowData);
+        if(maxAvgChanged) {
+          System.out.println("Average is less than the max average !");
+          maxAvgChanged = false;
+          continue;
+        }
+        listOfValidRows.addAll(previousValidRowData);
       }
 
       // If we reached this it means we got a list of valid rows, or an empty list meaning no valuable data was found in this batch.
-      listOfValidRows.addAll(nextValidRowData);
-      listOfValidRows.addAll(previousValidRowData);
-
       Collections.sort(listOfValidRows);
       return listOfValidRows;
     }
@@ -207,25 +214,37 @@ public class Analyzer {
   private static void processFoward(List<RowData> rowList, int startingPosition, List<Integer> nextValidRowData) {
 
     if(startingPosition >= rowList.size()) return;
+
     int previousIndex = startingPosition - 1;
 
-    RowData current = rowList.get(startingPosition++);
+    int amountOfRowsWithSameLength = (int) rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).count();
     RowData previous = rowList.get(previousIndex);
-    if(current.getStart() < previous.getMax()) {
+    RowData lastRowDataWithSameLength = rowList.get(previousIndex + amountOfRowsWithSameLength);
+
+    if(lastRowDataWithSameLength.getStart() == previous.getMax() && (previous.getStart() == previous.getMax())) {
+      int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
+      for(int i : arr) {
+        nextValidRowData.add(i);
+      }
+    }
+    else if(lastRowDataWithSameLength.getStart() < previous.getMax()) {
       // We need to validate that the condition that the average should be greater or equal than max average.
       // If this condition isn't met, then all the rows selected for this are wrong data.
-      if(current.getAverage() < current.getMaxAverage()) {
+      if(lastRowDataWithSameLength.getAverage() < lastRowDataWithSameLength.getMaxAverage()) {
         // Turn boolean flag on to point out that the data is all wrong, because of a change in the max average.
         maxAvgChanged = true;
         return;
       }
-      nextValidRowData.add(current.getRowNumber());
+      int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
+      for(int i : arr) {
+        nextValidRowData.add(i);
+      }
     }
     else {
       return;
     }
 
-    processFoward(rowList,startingPosition,nextValidRowData);
+    processFoward(rowList, (startingPosition + amountOfRowsWithSameLength) ,nextValidRowData);
 
   }
 

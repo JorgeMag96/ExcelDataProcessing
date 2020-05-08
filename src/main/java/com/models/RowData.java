@@ -1,5 +1,6 @@
 package com.models;
 
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 
 /**
@@ -20,13 +21,42 @@ public class RowData implements Comparable<RowData> {
       rowNumber = row.getRowNum();
       date = row.getCell(0).toString();
       time = row.getCell(1).getDateCellValue().getTime();
-      length = (int) row.getCell(3).getNumericCellValue();
-      average = (float)row.getCell(5).getNumericCellValue();
-      maxAverage = (float)row.getCell(6).getNumericCellValue();
-      cycle = (int) row.getCell(8).getNumericCellValue();
-      start = (int) row.getCell(9).getNumericCellValue();
-      max = (int) row.getCell(10).getNumericCellValue();
-
+      if(row.getCell(3).getCellType().equals(CellType.NUMERIC)) {
+        length = (int) row.getCell(3).getNumericCellValue();
+      }
+      else {
+        length = 0;
+      }
+      if(row.getCell(5).getCellType().equals(CellType.NUMERIC)) {
+        average = (int) row.getCell(5).getNumericCellValue();
+      }
+      else {
+        average = 0;
+      }
+      if(row.getCell(6).getCellType().equals(CellType.NUMERIC)) {
+        maxAverage = (int) row.getCell(6).getNumericCellValue();
+      }
+      else {
+        maxAverage = 0;
+      }
+      if(row.getCell(8).getCellType().equals(CellType.NUMERIC)) {
+        cycle = (int) row.getCell(8).getNumericCellValue();
+      }
+      else {
+        cycle = 0;
+      }
+      if(row.getCell(9).getCellType().equals(CellType.NUMERIC)) {
+        start = (int) row.getCell(9).getNumericCellValue();
+      }
+      else {
+        start = 0;
+      }
+      if(row.getCell(10).getCellType().equals(CellType.NUMERIC)) {
+        max = (int) row.getCell(10).getNumericCellValue();
+      }
+      else {
+        max = 0;
+      }
     } catch(Exception e) {
       throw new Exception("Exception thrown while trying to build a DataRow object = Error while parsing Row data for row #"+row.getRowNum());
     }
