@@ -49,14 +49,13 @@ public class Controller implements Initializable{
     }
 
     Workbook outputFile =  Analyzer.startAnalyzer(fileLabel.getText(), inputLength);
-    //TODO: Maybe a process animation while the Analyzer is working would be cool.
 
     fileLabel.setText("");
     FileChooser fc = new FileChooser();
     fc.setTitle("Save the output file");
     FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
     fc.getExtensionFilters().add(extFilter);
-    fc.setInitialDirectory(new File("data"+File.separator+"output"));
+    //fc.setInitialDirectory(new File("data"+File.separator+"output"));
     fc.setInitialFileName("output.xlsx");
 
     try (
@@ -84,7 +83,7 @@ public class Controller implements Initializable{
 
   public void chooseFileImpl() {
     FileChooser fc = new FileChooser();
-    fc.setInitialDirectory(new File("data"+File.separator+"input"));
+    //fc.setInitialDirectory(new File("data"+File.separator+"input"));
     FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
     fc.getExtensionFilters().add(extFilter);
     File selectedInstanceFile = fc.showOpenDialog(stage);

@@ -28,8 +28,7 @@ public class Analyzer {
 
   public static Workbook startAnalyzer(String pathToFile, int inputLength) {
 
-    //TODO: Remove this when program is finished
-    System.out.println("Analyzer started..");
+    //System.out.println("Analyzer started..");
     long startTime = System.currentTimeMillis();
 
     try {
@@ -108,8 +107,7 @@ public class Analyzer {
 
       outputWorkbook.removeSheetAt(0);
 
-      //TODO: Remove this when program is finished
-      System.out.println("Elapsed time = "+(System.currentTimeMillis()-startTime)/1000+" seconds.");
+      //System.out.println("Elapsed time = "+(System.currentTimeMillis()-startTime)/1000+" seconds.");
 
       return outputWorkbook;
     }
@@ -134,7 +132,7 @@ public class Analyzer {
     while(batchesIterator.hasNext()) {
       List<Integer> listOfValidRows = new ArrayList<>();
       Batch currentBatch = batchesIterator.next();
-      System.out.println("Processing sub-batch with size of = "+currentBatch.size());
+      //System.out.println("Processing sub-batch with size of = "+currentBatch.size());
 
       // Check if there's the input length in this sub batch.
       List<RowData> rowsOfData = currentBatch.getRowsOfData();
@@ -165,30 +163,28 @@ public class Analyzer {
 
       boolean processBackwardRows = startingRow.getStart() != startingRow.getMax();
 
-      //TODO: Remove this when program is finished.
-      rowsOfData.forEach(System.out::println);
+      //rowsOfData.forEach(System.out::println);
 
-      //TODO: Remove this line when program is finished.
-      System.out.println("Row position to start foward processing = "+startingFowardPosition);
+      //System.out.println("Row position to start foward processing = "+startingFowardPosition);
 
       List<Integer> nextValidRowData = new ArrayList<>();
       processFoward(rowsOfData, startingFowardPosition, nextValidRowData);
       if(maxAvgChanged) {
-        System.out.println("Average is less than the max average !");
+        //System.out.println("Average is less than the max average !");
         maxAvgChanged = false;
         continue;
       }
       listOfValidRows.addAll(nextValidRowData);
 
       int startingBackwardPosition = startingPosition - 1;
-      //TODO: Remove this line when program is finished.
-      System.out.println("Row position to start backward processing = "+startingBackwardPosition);
+
+      //System.out.println("Row position to start backward processing = "+startingBackwardPosition);
 
       if(processBackwardRows) {
         List<Integer> previousValidRowData = new ArrayList<>();
         processBackward(rowsOfData, startingBackwardPosition, previousValidRowData);
         if(maxAvgChanged) {
-          System.out.println("Average is less than the max average !");
+          //System.out.println("Average is less than the max average !");
           maxAvgChanged = false;
           continue;
         }
