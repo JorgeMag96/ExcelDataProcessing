@@ -213,12 +213,12 @@ public class Analyzer {
 
     int previousIndex = startingPosition - 1;
 
-    int amountOfRowsWithSameLength = (int) rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).count();
+    int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
+    int amountOfRowsWithSameLength = arr.length;
     RowData previous = rowList.get(previousIndex);
     RowData lastRowDataWithSameLength = rowList.get(previousIndex + amountOfRowsWithSameLength);
 
     if(lastRowDataWithSameLength.getStart() == previous.getMax() && (previous.getStart() == previous.getMax())) {
-      int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
       for(int i : arr) {
         nextValidRowData.add(i);
       }
@@ -231,7 +231,6 @@ public class Analyzer {
         maxAvgChanged = true;
         return;
       }
-      int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
       for(int i : arr) {
         nextValidRowData.add(i);
       }
@@ -255,21 +254,27 @@ public class Analyzer {
     if(startingPosition < 0) return;
     int previousIndex = startingPosition + 1;
 
-    RowData current = rowList.get(startingPosition--);
+    int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
+    int amountOfRowsWithSameLength = arr.length;
+
     RowData previous = rowList.get(previousIndex);
-    if(current.getMax() > previous.getStart()) {
-      if(current.getAverage() < current.getMaxAverage()) {
+    RowData lastRowDataWithSameLength = rowList.get(startingPosition);
+
+    if(lastRowDataWithSameLength.getMax() > previous.getStart()) {
+      if(lastRowDataWithSameLength.getAverage() < lastRowDataWithSameLength.getMaxAverage()) {
         // Turn boolean flag on to point out that the data is all wrong, because of a change in the max average.
         maxAvgChanged = true;
         return;
       }
-      previousValidRowData.add(current.getRowNumber());
+      for(int i : arr) {
+        previousValidRowData.add(i);
+      }
     }
     else {
       return;
     }
 
-    processBackward(rowList,startingPosition,previousValidRowData);
+    processBackward(rowList,startingPosition - amountOfRowsWithSameLength,previousValidRowData);
 
   }
 
