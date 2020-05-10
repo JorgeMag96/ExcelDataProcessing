@@ -252,12 +252,14 @@ public class Analyzer {
    */
   private static void processBackward(List<RowData> rowList, int startingPosition, List<Integer> previousValidRowData) {
     if(startingPosition < 0) return;
-    int previousIndex = startingPosition + 1;
+
+    // ( startingPosition + 1) is the position of the first row of the previous length, but we need to get the last row of the previous length.
+    int[] previousRows = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition + 1).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
+    RowData previous = rowList.get(startingPosition + previousRows.length);
 
     int[] arr = rowList.stream().filter(r -> r.getLength() == rowList.get(startingPosition).getLength()).mapToInt(r -> r.getRowNumber()).toArray();
     int amountOfRowsWithSameLength = arr.length;
 
-    RowData previous = rowList.get(previousIndex);
     RowData lastRowDataWithSameLength = rowList.get(startingPosition);
 
     if(lastRowDataWithSameLength.getMax() > previous.getStart()) {
