@@ -93,7 +93,10 @@ public class Analyzer {
       }
 
       // Process the last batch of data. Since the last batch of data doesn't enters the condition of the previous date comparison.
-      validDataRows.addAll(Analyzer.processBatch(batch, inputLength));
+      List<Integer> dataRows = Analyzer.processBatch(batch, inputLength);
+      if(dataRows != null) {
+        validDataRows.addAll(dataRows);
+      }
 
       if(!validDataRows.isEmpty()) {
         for(Integer rowIndex : validDataRows) {
